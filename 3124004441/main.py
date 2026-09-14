@@ -1,75 +1,58 @@
 import sys
-import hashlib
-import re
+import jieba
 
-def get_hash(text: str) -> int:
-    """对字符串做md5哈希，返回整数"""
-    return int(hashlib.md5(text.encode('utf-8')).hexdigest(), 16)
-
-def simhash(text: str, hash_bits=64) -> int:
-    """生成文本的simhash值"""
-    # 清洗文本：去掉标点、空白符
-    words = re.findall(r'[\u4e00-\u9fa5a-zA-Z0-9]+', text)
-    if not words:
-        return 0
-    # 初始化权重向量
+def get_simhash(text: str, hash_bits=64):
+    words = jieba.lcut(text)
     v = [0] * hash_bits
     for word in words:
-        h = get_hash(word)
+        h = hash(word) & ((1 << hash_bits) - 1)
         for i in range(hash_bits):
             bit = (h >> i) & 1
             if bit == 1:
                 v[i] += 1
             else:
                 v[i] -= 1
-    # 生成指纹
     fingerprint = 0
     for i in range(hash_bits):
         if v[i] > 0:
             fingerprint |= (1 << i)
     return fingerprint
 
-def hamming_distance(hash1: int, hash2: int) -> int:
-    """计算两个哈希的汉明距离"""
+def hamming_distance(hash1: int, hash2: int):
     return bin(hash1 ^ hash2).count('1')
 
-def calc_similarity(text1: str, text2: str) -> float:
-    """计算文本重复率，返回0~1之间浮点数"""
-    if len(text1.strip()) == 0 and len(text2.strip()) == 0:
-        return 1.0
-    if len(text1.strip()) == 0 or len(text2.strip()) == 0:
-        return 0.0
-    h1 = simhash(text1)
-    h2 = simhash(text2)
-    dist = hamming_distance(h1, h2)
-    similarity = 1 - dist / 64
-    return similarity
+def calc_similarity(hd, bits=64):
+    return 1.0 - hd / bits
 
-def main():
-    # 判断命令行参数数量
-    if len(sys.argv) != 4:
-        print("参数错误！使用方法：python main.py 原文路径 抄袭文件路径 输出文件路径")
-        sys.exit(1)
-    orig_path = sys.argv[1]
-    copy_path = sys.argv[2]
-    out_path = sys.argv[3]
+def read_file(file_path):
     try:
-        with open(orig_path, 'r', encoding='utf-8') as f:
-            orig_text = f.read()
-        with open(copy_path, 'r', encoding='utf-8') as f:
-            copy_text = f.read()
-    except FileNotFoundError:
-        print("错误：找不到指定文件")
-        sys.exit(2)
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
     except Exception as e:
-        print(f"读取文件出错：{e}")
-        sys.exit(3)
-
-    # 计算重复率
-    rate = calc_similarity(orig_text, copy_text)
-    # 写入文件，保留2位小数
-    with open(out_path, 'w', encoding='utf-8') as f:
-        f.write(f"{rate:.2f}")
+        print(f"读取文件失败：{file_path}, 错误：{e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    main()
+    print("程序启动！")
+    if len(sys.argv) != 4:
+        print("用法：python main.py 原文.txt 对比文本.txt 输出结果.txt")
+        print("示例：python main.py orig.txt orig_0.8_add.txt ans.txt")
+        sys.exit(0)
+
+    file1_path = sys.argv[1]
+    file2_path = sys.argv[2]
+    out_path = sys.argv[3]
+
+    text1 = read_file(file1_path)
+    text2 = read_file(file2_path)
+
+    hash1 = get_simhash(text1)
+    hash2 = get_simhash(text2)
+    dist = hamming_distance(hash1, hash2)
+    sim = calc_similarity(dist)
+
+    result_text = f"海明距离：{dist}\n文本相似度：{sim:.2f}"
+    print(result_text)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(result_text)
+    print(f"结果已写入：{out_path}")
