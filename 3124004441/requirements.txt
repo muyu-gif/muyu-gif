@@ -1,3 +1,2 @@
-jieba
-pytest
-pytest-cov
+jieba>=0.42.1
+pytest>=7.0.0
