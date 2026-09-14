@@ -16,14 +16,26 @@ jobs:
       with:
         python-version: "3.11"
 
+    # 进入你的项目文件夹！！这是关键新增行
+    - name: Enter project folder
+      run: cd 3124004441
+
     - name: Install dependencies
       run: |
+        cd 3124004441
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
     - name: Run pytest
       run: |
+        cd 3124004441
         pytest test_main.py -v
+
+    - name: Run simhash demo
+      run: |
+        cd 3124004441
+        python main.py orig.txt orig_0.8_add.txt github_out.txt
+        cat github_out.txt
 
     - name: Run simhash demo
       run: |
