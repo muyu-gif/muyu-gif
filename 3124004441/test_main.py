@@ -17,7 +17,7 @@ def test_diff_text():
     assert 0 <= sim <= 1.0
 
 def test_simhash_stable():
-    txt = "计算机系统结构课程作业"
+    txt = "软工作业"
     hash_a = get_simhash(txt)
     hash_b = get_simhash(txt)
     assert hash_a == hash_b
