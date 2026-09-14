@@ -1,11 +1,19 @@
 import sys
 import jieba
+import hashlib
+
+def get_word_hash(word: str, bits=64):
+    """使用md5生成固定64bit哈希，替代Python内置随机hash"""
+    md5 = hashlib.md5(word.encode('utf-8')).digest()
+    val = int.from_bytes(md5, byteorder="big") & ((1 << bits) - 1)
+    return val
 
 def get_simhash(text: str, hash_bits=64):
+    """生成稳定SimHash指纹"""
     words = jieba.lcut(text)
     v = [0] * hash_bits
     for word in words:
-        h = hash(word) & ((1 << hash_bits) - 1)
+        h = get_word_hash(word, hash_bits)
         for i in range(hash_bits):
             bit = (h >> i) & 1
             if bit == 1:
@@ -19,12 +27,15 @@ def get_simhash(text: str, hash_bits=64):
     return fingerprint
 
 def hamming_distance(hash1: int, hash2: int):
+    """计算两个指纹海明距离"""
     return bin(hash1 ^ hash2).count('1')
 
 def calc_similarity(hd, bits=64):
+    """海明距离转为相似度 0~1"""
     return 1.0 - hd / bits
 
 def read_file(file_path):
+    """读取文本文件，utf8"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
