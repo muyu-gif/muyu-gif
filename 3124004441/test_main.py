@@ -17,7 +17,6 @@ def test_diff_text():
     assert 0 <= sim <= 1.0
 
 def test_simhash_stable():
-    """保证同一文本多次运行，指纹完全一致（关键！老师用例必过）"""
     txt = "计算机系统结构课程作业"
     hash_a = get_simhash(txt)
     hash_b = get_simhash(txt)
