@@ -1,0 +1,26 @@
+name: Python CI Test
+on:
+  push:
+    branches: [ main ]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          cd 3124004441
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pytest and coverage
+        run: |
+          cd 3124004441
+          pytest test_main.py -v --cov=main --cov-report=term
