@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # ✅ 全局指定工作目录，所有步骤自动进入这个文件夹！不用反复cd
     defaults:
       run:
         working-directory: ./3124004441
@@ -25,10 +24,40 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install coverage snakeviz
 
-    - name: Run pytest
+    - name: 1. Run pytest + coverage 测试覆盖率
       run: |
-        pytest test_main.py -v
+        coverage run -m pytest test_main.py -v
+        coverage report
+        coverage xml
+
+    - name: 2. cProfile 性能分析，生成 profile 文件
+      run: |
+        python -m cProfile -o main.prof main.py orig.txt orig_0.8_add.txt out1.txt
+
+    - name: 3. 批量运行全部6组测试用例，输出相似度表格
+      run: |
+        echo "|原文件|测试文件|相似度|"
+        echo "|------|--------|------|"
+        python main.py orig.txt orig.txt out0.txt
+        python main.py orig.txt orig_0.8_add.txt out1.txt
+        python main.py orig.txt orig_0.8_del.txt out2.txt
+        python main.py orig.txt orig_0.8_dis_1.txt out3.txt
+        python main.py orig.txt orig_0.8_dis_10.txt out4.txt
+        python main.py orig.txt orig_0.8_dis_15.txt out5.txt
+        cat out0.txt
+        cat out1.txt
+        cat out2.txt
+        cat out3.txt
+        cat out4.txt
+        cat out5.txt
+
+    - name: Upload 产物（覆盖率xml + profile性能文件）
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-output
+        path: 3124004441/
 
     - name: Run simhash demo
       run: |
