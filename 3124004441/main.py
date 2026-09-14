@@ -1,67 +1,50 @@
 import jieba
-import hashlib
 
-def get_tokens(text: str):
-    """分词，过滤空白字符"""
+def get_simhash(text: str, hash_bits=64) -> int:
+    """
+    计算文本的64位SimHash值，返回整数
+    """
+    if not text.strip():
+        return 0
+    
+    # 分词
     words = jieba.lcut(text)
-    tokens = [w.strip() for w in words if w.strip()]
-    return tokens
-
-def simhash(tokens, hash_bits=64):
-    """计算simhash指纹"""
+    # 初始化权重数组
     v = [0] * hash_bits
-    for token in tokens:
-        h = hashlib.sha256(token.encode('utf-8')).digest()
-        h_int = int.from_bytes(h, byteorder='big')
-        h_int = h_int & ((1 << hash_bits) - 1)
+    
+    for word in words:
+        # 简单hash得到单词hash值
+        word_hash = hash(word) & ((1 << hash_bits) - 1)
         for i in range(hash_bits):
-            bit = (h_int >> i) & 1
+            bit = (word_hash >> i) & 1
             if bit == 1:
                 v[i] += 1
             else:
                 v[i] -= 1
-    # 生成指纹
-    fingerprint = 0
+    # 生成最终simhash
+    simhash_val = 0
     for i in range(hash_bits):
         if v[i] > 0:
-            fingerprint |= (1 << i)
-    return fingerprint
+            simhash_val |= (1 << i)
+    return simhash_val
 
-def hamming_distance(fp1, fp2):
-    """计算汉明距离"""
-    return bin(fp1 ^ fp2).count('1')
 
-def calc_similarity(fp1, fp2):
-    """根据汉明距离计算相似度"""
-    dist = hamming_distance(fp1, fp2)
-    return 1.0 - dist / 64.0
+def calc_similarity(text1: str, text2: str) -> float:
+    """
+    计算两段文本相似度，返回0~1之间小数
+    """
+    h1 = get_simhash(text1)
+    h2 = get_simhash(text2)
+    # 整数异或，统计汉明距离
+    xor = h1 ^ h2
+    hamming_dist = bin(xor).count("1")
+    # 相似度换算
+    similarity = 1 - (hamming_dist / 64.0)
+    return similarity
 
-def read_file(path):
-    with open(path, 'r', encoding='utf-8') as f:
-        return f.read()
-
-def main():
-    import sys
-    if len(sys.argv) != 4:
-        print("用法: python main.py 原文文件 待查文件 输出结果文件")
-        sys.exit(1)
-    ori_path = sys.argv[1]
-    test_path = sys.argv[2]
-    out_path = sys.argv[3]
-
-    text_ori = read_file(ori_path)
-    text_test = read_file(test_path)
-
-    tokens_ori = get_tokens(text_ori)
-    tokens_test = get_tokens(text_test)
-
-    fp_ori = simhash(tokens_ori)
-    fp_test = simhash(tokens_test)
-
-    similarity = calc_similarity(fp_ori, fp_test)
-
-    with open(out_path, 'w', encoding='utf-8') as f:
-        f.write(f"{similarity:.2%}")
 
 if __name__ == "__main__":
-    main()
+    # 本地测试示例
+    s1 = "我爱人工智能"
+    s2 = "我爱机器学习"
+    print(calc_similarity(s1, s2))
