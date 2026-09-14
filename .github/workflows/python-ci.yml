@@ -23,4 +23,9 @@ jobs:
       - name: Run pytest and coverage
         run: |
           cd 3124004441
+          pytest test_main.py --cov=main
+
+      - name: Run pytest and coverage
+        run: |
+          cd 3124004441
           pytest test_main.py -v --cov=main --cov-report=term
