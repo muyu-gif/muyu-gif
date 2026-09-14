@@ -1,31 +1,31 @@
-name: Python CI Test
+name: Python CI
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          cd 3124004441
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Run pytest and coverage
-        run: |
-          cd 3124004441
-          pytest test_main.py --cov=main
+    - name: Run pytest
+      run: |
+        pytest test_main.py -v
 
-      - name: Run pytest and coverage
-        run: |
-          cd 3124004441
-          pytest test_main.py -v --cov=main --cov-report=term
+    - name: Run simhash demo
+      run: |
+        python main.py orig.txt orig_0.8_add.txt github_out.txt
+        cat github_out.txt
